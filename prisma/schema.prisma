@@ -1,0 +1,1033 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+/// MEDIUM is shown to learners as "Moderate".
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  ADVANCED
+}
+
+enum QuestionFormat {
+  MCQ
+  MULTIPLE_STATEMENTS
+  ASSERTION_REASON
+  MATCH_THE_FOLLOWING
+  PASSAGE
+  DATA_INTERPRETATION
+}
+
+/// Where a question came from. PYQ is only ever "verified" when `pyqVerifiedAt`
+/// is set by an admin, and that requires a source reference. PATTERN_BASED is a
+/// new question written in the format of a common exam pattern; it is never a PYQ.
+enum SourceType {
+  ILLUSTRATIVE_SAMPLE
+  ADMIN_AUTHORED
+  AI_GENERATED
+  PATTERN_BASED
+  PYQ
+}
+
+/// Workflow: DRAFT -> PENDING_REVIEW -> APPROVED | REJECTED -> ARCHIVED.
+/// Only APPROVED questions are ever served to learners.
+enum QuestionStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ContextType {
+  PASSAGE
+  DATA_SET
+}
+
+enum PracticeMode {
+  PRACTICE
+  TEST
+}
+
+/// How a session's questions were selected.
+enum SessionScope {
+  TOPIC
+  SUBTOPIC
+  TOPIC_TEST
+  SIMILAR
+  COMMON_TOPIC
+  BOOKMARKS
+  MISTAKES
+  PYQ
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum MockAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+}
+
+enum AIJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+/// What kind of preparation a stage needs. OBJECTIVE stages have MCQ practice,
+/// DESCRIPTIVE stages have writing tasks, INTERVIEW stages have guides only.
+enum StageKind {
+  OBJECTIVE
+  DESCRIPTIVE
+  INTERVIEW
+}
+
+enum TopicKind {
+  OBJECTIVE
+  DESCRIPTIVE
+}
+
+/// Admin-set importance of a topic within a stage. UNSET until an admin grounds
+/// it in verified previous-year analysis; the seed never invents a priority.
+enum TopicPriority {
+  UNSET
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// FOUNDATION subtopics belong to every stage that offers the topic. ADVANCED
+/// subtopics are only shown by stages with `includesAdvanced` (Mains).
+enum SubtopicTier {
+  FOUNDATION
+  ADVANCED
+}
+
+enum NoteKind {
+  INTRODUCTION
+  CONCEPT
+  SHORTCUT
+  COMMON_MISTAKE
+  SOLVED_EXAMPLE
+}
+
+enum DescriptiveTaskType {
+  EMAIL
+  SITUATION_ANALYSIS
+  REPORT
+  PRECIS
+  ESSAY
+  LETTER
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  role            Role     @default(USER)
+  dailyTarget     Int      @default(30)
+  preferredExamId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  preferredExam      Exam?                     @relation("PreferredExam", fields: [preferredExamId], references: [id], onDelete: SetNull)
+  sessions           PracticeSession[]
+  answers            UserAnswer[]
+  mockAttempts       MockTestAttempt[]
+  bookmarks          Bookmark[]
+  mistakes           Mistake[]
+  activities         DailyActivity[]
+  reports            QuestionReport[]
+  aiJobs             AIQuestionGenerationJob[]
+  verifiedPyqs       Question[]                @relation("PyqVerifier")
+  topicProgress      UserTopicProgress[]
+  subtopicProgress   UserSubtopicProgress[]
+  subjectProgress    UserSubjectProgress[]
+  descriptiveAttempts DescriptiveAttempt[]
+}
+
+// ---------------------------------------------------------------------------
+// Catalog: exams own their configuration of a shared subject/topic taxonomy.
+// An exam may also define stages (Prelims, Mains, ...), each with its own
+// subject list, exam metadata and topic mapping.
+// ---------------------------------------------------------------------------
+
+model Exam {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  shortName   String
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subjects          ExamSubject[]
+  topics            ExamTopic[]
+  stages            ExamStage[]
+  patterns          ExamPattern[]
+  mockTests         MockTest[]
+  primaryQuestions  Question[]                @relation("PrimaryExam")
+  relevantQuestions QuestionExam[]
+  sessions          PracticeSession[]
+  preferredBy       User[]                    @relation("PreferredExam")
+  aiJobs            AIQuestionGenerationJob[]
+}
+
+/// One phase of an exam. The numbers are exam metadata that admins keep in step
+/// with the current official notification; nothing in the UI hardcodes them.
+model ExamStage {
+  id              String    @id @default(cuid())
+  examId          String
+  slug            String
+  name            String
+  shortName       String
+  kind            StageKind @default(OBJECTIVE)
+  order           Int       @default(0)
+  description     String?
+  totalQuestions  Int?
+  totalMarks      Float?
+  durationMinutes Int?
+  /// Free text for rules that do not fit the columns (sectional timing, cut-offs, task choices).
+  notes           String?
+  /// Mains stages show ADVANCED-tier subtopics of shared topics; Prelims does not.
+  includesAdvanced Boolean  @default(false)
+  /// Difficulties this stage's topic tests and recommendations lean on.
+  preferredDifficulties Difficulty[] @default([])
+  /// For DESCRIPTIVE stages: the task choices offered by the current notification.
+  taskTypes       DescriptiveTaskType[] @default([])
+  /// Optional link to the mock-test pattern that mirrors this stage.
+  patternId       String?
+  /// Set only after an admin checks the metadata against an official notification.
+  verifiedAt      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  exam             Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
+  pattern          ExamPattern?        @relation(fields: [patternId], references: [id], onDelete: SetNull)
+  subjects         StageSubject[]
+  topics           StageTopic[]
+  descriptiveTasks DescriptiveTask[]
+  guides           PrepGuide[]
+  sessions         PracticeSession[]
+  aiJobs           AIQuestionGenerationJob[]
+
+  @@unique([examId, slug])
+  @@index([examId, order])
+}
+
+/// A subject as it appears in one stage, with that stage's section metadata.
+model StageSubject {
+  stageId         String
+  subjectId       String
+  /// How the notification names the section, when it differs from the subject name.
+  displayName     String?
+  order           Int     @default(0)
+  questionCount   Int?
+  marks           Float?
+  durationMinutes Int?
+  isActive        Boolean @default(true)
+
+  stage   ExamStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  subject Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([stageId, subjectId])
+  @@index([subjectId])
+}
+
+/// A topic offered in a stage, listed under `subjectId` (which may differ from the
+/// topic's home subject: Mains Data Analysis shares the Prelims arithmetic topics).
+model StageTopic {
+  stageId      String
+  topicId      String
+  subjectId    String
+  order        Int           @default(0)
+  priority     TopicPriority @default(UNSET)
+  priorityNote String?
+  isActive     Boolean       @default(true)
+
+  stage   ExamStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  topic   Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  subject Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([stageId, topicId])
+  @@index([stageId, subjectId, order])
+  @@index([topicId])
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exams           ExamSubject[]
+  stages          StageSubject[]
+  stageTopics     StageTopic[]
+  topics          Topic[]
+  questions       Question[]
+  sessions        PracticeSession[]
+  answers         UserAnswer[]
+  patternSections ExamPatternSection[]
+  aiJobs          AIQuestionGenerationJob[]
+  userProgress    UserSubjectProgress[]
+}
+
+model ExamSubject {
+  examId    String
+  subjectId String
+  order     Int     @default(0)
+  isActive  Boolean @default(true)
+
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([examId, subjectId])
+  @@index([subjectId])
+}
+
+model Topic {
+  id          String    @id @default(cuid())
+  subjectId   String
+  slug        String
+  name        String
+  description String?
+  kind        TopicKind @default(OBJECTIVE)
+  order       Int       @default(0)
+  /// Archived topics keep their questions and history but leave the syllabus.
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  subject          Subject                   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subtopics        Subtopic[]
+  exams            ExamTopic[]
+  stages           StageTopic[]
+  notes            TopicNote[]
+  formulas         Formula[]
+  descriptiveTasks DescriptiveTask[]
+  questions        Question[]
+  sessions         PracticeSession[]
+  answers          UserAnswer[]
+  mistakes         Mistake[]
+  aiJobs           AIQuestionGenerationJob[]
+  userProgress     UserTopicProgress[]
+
+  @@unique([subjectId, slug])
+  @@index([subjectId, order])
+}
+
+model ExamTopic {
+  examId   String
+  topicId  String
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
+  exam  Exam  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([examId, topicId])
+  @@index([topicId])
+}
+
+model Subtopic {
+  id          String       @id @default(cuid())
+  topicId     String
+  slug        String
+  name        String
+  description String?
+  order       Int          @default(0)
+  tier        SubtopicTier @default(FOUNDATION)
+  archivedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  topic            Topic                     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  questions        Question[]
+  sessions         PracticeSession[]
+  answers          UserAnswer[]
+  descriptiveTasks DescriptiveTask[]
+  aiJobs           AIQuestionGenerationJob[]
+  userProgress     UserSubtopicProgress[]
+
+  @@unique([topicId, slug])
+  @@index([topicId, order])
+}
+
+/// Learning material shown on a topic page: introduction, concepts, shortcuts,
+/// common mistakes and worked examples. Plain text with blank-line paragraphs
+/// and "- " bullet lines.
+model TopicNote {
+  id        String   @id @default(cuid())
+  topicId   String
+  kind      NoteKind
+  title     String
+  content   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([topicId, kind, order])
+}
+
+model Formula {
+  id          String   @id @default(cuid())
+  topicId     String
+  title       String
+  expression  String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([topicId, order])
+}
+
+// ---------------------------------------------------------------------------
+// Exam patterns (admin-editable; never assumed to be shared across exams)
+// ---------------------------------------------------------------------------
+
+model ExamPattern {
+  id              String    @id @default(cuid())
+  examId          String
+  name            String
+  /// When true each section has its own locked timer. When false the whole
+  /// test shares `compositeMinutes` and sections can be visited freely.
+  sectionalTiming Boolean   @default(true)
+  compositeMinutes Int?
+  notes           String?
+  /// Set only after an admin checks the pattern against an official notification.
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  exam      Exam                 @relation(fields: [examId], references: [id], onDelete: Cascade)
+  sections  ExamPatternSection[]
+  mockTests MockTest[]
+  stages    ExamStage[]
+
+  @@unique([examId, name])
+}
+
+model ExamPatternSection {
+  id            String @id @default(cuid())
+  patternId     String
+  subjectId     String
+  name          String
+  order         Int    @default(0)
+  questionCount Int
+  durationMinutes Int
+  marksPerQuestion Float @default(1)
+  negativeMarks Float  @default(0.25)
+
+  pattern  ExamPattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  subject  Subject     @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  attemptQuestions MockAttemptQuestion[]
+
+  @@index([patternId, order])
+}
+
+// ---------------------------------------------------------------------------
+// Question bank
+// ---------------------------------------------------------------------------
+
+/// A passage or data set shared by several questions (RC, cloze, DI).
+model QuestionContext {
+  id      String      @id @default(cuid())
+  type    ContextType
+  title   String
+  content String
+  /// Optional table for DI: { columns: string[], rows: (string|number)[][] }
+  table   Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  questions Question[]
+}
+
+model Question {
+  id              String         @id @default(cuid())
+  /// Primary exam the question was written for (or, for a PYQ, appeared in).
+  examId          String
+  subjectId       String
+  topicId         String
+  subtopicId      String?
+  contextId       String?
+  aiJobId         String?
+  format          QuestionFormat @default(MCQ)
+  questionText    String
+  /// Structured extras per format: { statements: [] } | { assertion, reason } |
+  /// { columnA: [], columnB: [] }. Rendered by QuestionBody.
+  formatData      Json?
+  explanation     String
+  difficulty      Difficulty
+  sourceType      SourceType
+  sourceReference String?
+  /// Month the fact belongs to, YYYY-MM, for current-affairs style questions.
+  periodMonth     String?
+  tags            String[]       @default([])
+  status          QuestionStatus @default(APPROVED)
+  /// Normalised text hash; blocks exact duplicates within a topic.
+  contentHash     String
+  pyqVerifiedAt   DateTime?
+  pyqVerifiedById String?
+  rejectionReason String?
+  archivedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  exam         Exam             @relation("PrimaryExam", fields: [examId], references: [id], onDelete: Restrict)
+  subject      Subject          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic        Topic            @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  subtopic     Subtopic?        @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+  context      QuestionContext? @relation(fields: [contextId], references: [id], onDelete: SetNull)
+  aiJob        AIQuestionGenerationJob? @relation(fields: [aiJobId], references: [id], onDelete: SetNull)
+  pyqVerifiedBy User?           @relation("PyqVerifier", fields: [pyqVerifiedById], references: [id], onDelete: SetNull)
+
+  detail           QuestionExplanation?
+  source           QuestionSource?
+  options          QuestionOption[]
+  relevantExams    QuestionExam[]
+  sessionQuestions SessionQuestion[]
+  answers          UserAnswer[]
+  bookmarks        Bookmark[]
+  mistakes         Mistake[]
+  reports          QuestionReport[]
+  mockQuestions    MockAttemptQuestion[]
+
+  @@unique([topicId, contentHash])
+  @@index([topicId, difficulty, status])
+  @@index([subtopicId, difficulty, status])
+  @@index([subjectId, status])
+  @@index([examId, status])
+  @@index([sourceType, status])
+  @@index([topicId, periodMonth])
+  @@index([contextId])
+}
+
+/// Structured solution shown after answering, on top of the prose explanation.
+model QuestionExplanation {
+  questionId       String   @id
+  /// Step-by-step working, one step per entry.
+  steps            String[] @default([])
+  concept          String?
+  /// The formula or grammar rule the question rests on.
+  rule             String?
+  shortcut         String?
+  commonMistake    String?
+  /// How long a well-prepared candidate should need.
+  estimatedSeconds Int?
+  updatedAt        DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+/// Structured provenance for a previous-year question. Fields are only filled
+/// when documented; a year or shift is never guessed. Verification itself lives
+/// on Question.pyqVerifiedAt so approval and verification stay separate.
+model QuestionSource {
+  questionId String  @id
+  examName   String
+  year       Int?
+  shift      String?
+  paper      String?
+  reference  String
+  notes      String?
+  updatedAt  DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([examName, year])
+}
+
+/// Which exams may serve this question. Practice is always filtered through
+/// this table unless the user picks common practice mode.
+model QuestionExam {
+  questionId String
+  examId     String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, examId])
+  @@index([examId])
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  order      Int
+  isCorrect  Boolean @default(false)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, order])
+}
+
+model QuestionReport {
+  id         String       @id @default(cuid())
+  questionId String
+  userId     String
+  reason     String
+  details    String?
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([questionId])
+}
+
+// ---------------------------------------------------------------------------
+// Practice
+// ---------------------------------------------------------------------------
+
+model PracticeSession {
+  id            String        @id @default(cuid())
+  userId        String
+  examId        String?
+  stageId       String?
+  subjectId     String?
+  topicId       String?
+  subtopicId    String?
+  difficulty    Difficulty?
+  /// Restricts the pool to one source (verified PYQs, AI-generated, ...). Null means any.
+  sourceFilter  SourceType?
+  mode          PracticeMode
+  scope         SessionScope  @default(TOPIC)
+  status        SessionStatus @default(IN_PROGRESS)
+  questionCount Int
+  /// Timed practice. Enforced by the server in TEST mode; advisory in PRACTICE mode.
+  timeLimitSec  Int?
+  autoFinished  Boolean       @default(false)
+  currentIndex  Int           @default(0)
+  correctCount  Int           @default(0)
+  incorrectCount Int          @default(0)
+  skippedCount  Int           @default(0)
+  timeSpentSec  Int           @default(0)
+  startedAt     DateTime      @default(now())
+  completedAt   DateTime?
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam     Exam?      @relation(fields: [examId], references: [id], onDelete: SetNull)
+  stage    ExamStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  subject  Subject?   @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  topic    Topic?     @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  subtopic Subtopic?  @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+
+  questions SessionQuestion[]
+  answers   UserAnswer[]
+
+  @@index([userId, startedAt])
+  @@index([userId, status])
+  @@index([userId, topicId, status])
+}
+
+model SessionQuestion {
+  sessionId        String
+  questionId       String
+  order            Int
+  markedForReview  Boolean @default(false)
+  skipped          Boolean @default(false)
+  /// The user asked to see the explanation before answering, so it can no
+  /// longer be answered for credit.
+  revealed         Boolean @default(false)
+
+  session  PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, questionId])
+  @@unique([sessionId, order])
+  @@index([questionId])
+}
+
+/// One answer in a practice session or mock attempt. `isCorrect` is computed
+/// server-side; `finalizedAt` marks when it counts for stats and may be shown
+/// to the user (immediately in practice mode, on completion in test/mock mode).
+/// topicId/subtopicId/subjectId/difficulty are denormalised so analytics can group by them.
+model UserAnswer {
+  id               String     @id @default(cuid())
+  userId           String
+  questionId       String
+  sessionId        String?
+  mockAttemptId    String?
+  selectedOptionId String?
+  isCorrect        Boolean
+  timeSpentSec     Int        @default(0)
+  topicId          String
+  subtopicId       String?
+  subjectId        String
+  difficulty       Difficulty
+  answeredAt       DateTime   @default(now())
+  finalizedAt      DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question    Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  session     PracticeSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  mockAttempt MockTestAttempt? @relation(fields: [mockAttemptId], references: [id], onDelete: Cascade)
+  topic       Topic            @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  subtopic    Subtopic?        @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+  subject     Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, questionId])
+  @@unique([mockAttemptId, questionId])
+  @@index([userId, finalizedAt])
+  @@index([userId, topicId])
+  @@index([userId, subtopicId])
+  @@index([userId, subjectId])
+  @@index([questionId])
+}
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, createdAt])
+}
+
+/// The notebook entry for a question the user got wrong. It stays in the
+/// notebook after a correct retry, flagged as resolved. `understoodAt` is the
+/// learner's own "I get it now" mark, separate from a correct retry.
+model Mistake {
+  id                 String    @id @default(cuid())
+  userId             String
+  questionId         String
+  topicId            String?
+  lastWrongOptionId  String?
+  wrongCount         Int       @default(1)
+  correctRetryCount  Int       @default(0)
+  isResolved         Boolean   @default(false)
+  understoodAt       DateTime?
+  firstWrongAt       DateTime  @default(now())
+  lastWrongAt        DateTime  @default(now())
+  resolvedAt         DateTime?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  topic    Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, questionId])
+  @@index([userId, isResolved, lastWrongAt])
+  @@index([userId, topicId])
+}
+
+model DailyActivity {
+  id           String   @id @default(cuid())
+  userId       String
+  /// Calendar day in the app timezone, stored at UTC midnight.
+  date         DateTime @db.Date
+  attempted    Int      @default(0)
+  correct      Int      @default(0)
+  timeSpentSec Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Progress: maintained in the same transaction that finalizes answers.
+// Status labels are computed from these numbers (lib/progress-rules.ts), never
+// from merely opening a topic.
+// ---------------------------------------------------------------------------
+
+model UserTopicProgress {
+  id                String    @id @default(cuid())
+  userId            String
+  topicId           String
+  attempted         Int       @default(0)
+  correct           Int       @default(0)
+  incorrect         Int       @default(0)
+  timeSpentSec      Int       @default(0)
+  /// Distinct approved questions answered at least once.
+  uniqueSolved      Int       @default(0)
+  /// Finished practice sessions on this topic.
+  sessionCount      Int       @default(0)
+  easyAttempted     Int       @default(0)
+  easyCorrect       Int       @default(0)
+  mediumAttempted   Int       @default(0)
+  mediumCorrect     Int       @default(0)
+  hardAttempted     Int       @default(0)
+  hardCorrect       Int       @default(0)
+  advancedAttempted Int       @default(0)
+  advancedCorrect   Int       @default(0)
+  lastPracticedAt   DateTime?
+  updatedAt         DateTime  @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@index([userId, lastPracticedAt])
+}
+
+model UserSubtopicProgress {
+  id              String    @id @default(cuid())
+  userId          String
+  subtopicId      String
+  attempted       Int       @default(0)
+  correct         Int       @default(0)
+  incorrect       Int       @default(0)
+  timeSpentSec    Int       @default(0)
+  uniqueSolved    Int       @default(0)
+  lastPracticedAt DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtopic Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subtopicId])
+}
+
+/// Rolled up by the question's home subject. Stage dashboards aggregate topic
+/// progress instead, because a shared topic can sit under a different subject in Mains.
+model UserSubjectProgress {
+  id              String    @id @default(cuid())
+  userId          String
+  subjectId       String
+  attempted       Int       @default(0)
+  correct         Int       @default(0)
+  incorrect       Int       @default(0)
+  timeSpentSec    Int       @default(0)
+  lastPracticedAt DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subjectId])
+}
+
+// ---------------------------------------------------------------------------
+// Descriptive writing (Mains descriptive paper)
+// ---------------------------------------------------------------------------
+
+model DescriptiveTask {
+  id                 String              @id @default(cuid())
+  stageId            String
+  topicId            String?
+  subtopicId         String?
+  type               DescriptiveTaskType
+  title              String
+  prompt             String
+  /// Passage to summarise for a precis, or a situation to analyse.
+  sourceText         String?
+  modelAnswer        String
+  evaluationCriteria String[]            @default([])
+  wordLimit          Int
+  timeLimitMinutes   Int
+  difficulty         Difficulty          @default(MEDIUM)
+  sourceType         SourceType          @default(ADMIN_AUTHORED)
+  sourceReference    String?
+  status             QuestionStatus      @default(APPROVED)
+  order              Int                 @default(0)
+  archivedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  stage    ExamStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  topic    Topic?     @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  subtopic Subtopic?  @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+  attempts DescriptiveAttempt[]
+
+  @@index([stageId, status, order])
+  @@index([topicId])
+}
+
+model DescriptiveAttempt {
+  id           String   @id @default(cuid())
+  userId       String
+  taskId       String
+  responseText String
+  wordCount    Int
+  timeSpentSec Int      @default(0)
+  /// Learner's self-assessment per criterion, 0 to 5: { "<criterion>": n }.
+  selfScores   Json?
+  /// Feedback: { source: "RULES" | "AI", summary, grammar: string[], structure: string[], content: string[], score?: number, maxScore?: number, model?: string }.
+  feedback     Json?
+  submittedAt  DateTime @default(now())
+
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task DescriptiveTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([userId, submittedAt])
+  @@index([taskId])
+}
+
+/// Guidance pages for non-MCQ stages (psychometric test, group exercise, interview).
+model PrepGuide {
+  id        String   @id @default(cuid())
+  stageId   String
+  slug      String
+  title     String
+  summary   String
+  content   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stage ExamStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, slug])
+  @@index([stageId, order])
+}
+
+// ---------------------------------------------------------------------------
+// Mock tests
+// ---------------------------------------------------------------------------
+
+model MockTest {
+  id          String   @id @default(cuid())
+  examId      String
+  patternId   String
+  title       String
+  description String?
+  /// 100 is the full pattern; lower values scale question counts and timers
+  /// proportionally for shorter drills.
+  scalePercent Int     @default(100)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  exam     Exam              @relation(fields: [examId], references: [id], onDelete: Cascade)
+  pattern  ExamPattern       @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  attempts MockTestAttempt[]
+
+  @@index([examId, isActive])
+}
+
+model MockTestAttempt {
+  id                  String            @id @default(cuid())
+  userId              String
+  mockTestId          String
+  status              MockAttemptStatus @default(IN_PROGRESS)
+  /// Copied at start so later admin edits cannot change a running test's rules.
+  sectionalTiming     Boolean
+  totalSeconds        Int
+  currentSectionIndex Int               @default(0)
+  sectionStartedAt    DateTime          @default(now())
+  /// Number of questions requested by the pattern vs. actually served.
+  requestedCount      Int
+  servedCount         Int
+  score               Float?
+  maxScore            Float?
+  correctCount        Int?
+  incorrectCount      Int?
+  unansweredCount     Int?
+  autoSubmitted       Boolean           @default(false)
+  startedAt           DateTime          @default(now())
+  submittedAt         DateTime?
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mockTest  MockTest              @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  questions MockAttemptQuestion[]
+  answers   UserAnswer[]
+
+  @@index([userId, startedAt])
+  @@index([userId, status])
+}
+
+model MockAttemptQuestion {
+  attemptId       String
+  questionId      String
+  sectionId       String
+  sectionIndex    Int
+  sectionName     String
+  sectionSeconds  Int
+  marksPerQuestion Float
+  negativeMarks   Float
+  order           Int
+  markedForReview Boolean @default(false)
+  visited         Boolean @default(false)
+
+  attempt  MockTestAttempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  section  ExamPatternSection @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+
+  @@id([attemptId, questionId])
+  @@unique([attemptId, order])
+  @@index([questionId])
+}
+
+// ---------------------------------------------------------------------------
+// AI generation
+// ---------------------------------------------------------------------------
+
+model AIQuestionGenerationJob {
+  id            String      @id @default(cuid())
+  createdById   String
+  examId        String
+  stageId       String?
+  subjectId     String
+  topicId       String
+  subtopicId    String?
+  difficulty    Difficulty
+  requestedCount Int
+  status        AIJobStatus @default(QUEUED)
+  model         String?
+  generatedCount Int        @default(0)
+  duplicateCount Int        @default(0)
+  invalidCount  Int         @default(0)
+  error         String?
+  createdAt     DateTime    @default(now())
+  completedAt   DateTime?
+
+  createdBy User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  exam      Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  stage     ExamStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  subject   Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topic     Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  subtopic  Subtopic?  @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+  questions Question[]
+
+  @@index([createdAt])
+}

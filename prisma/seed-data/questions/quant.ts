@@ -1,0 +1,817 @@
+import type { SeedQuestionFile } from "../types";
+
+const PNC_EXAMS = ["rbi-grade-b", "rbi-assistant", "ibps-po", "ibps-so-it", "sbi-po"];
+
+const CANNOT = "x = y or relationship cannot be established";
+
+const file: SeedQuestionFile = {
+  contexts: [
+    {
+      key: "quant-di-bank-loans",
+      type: "DATA_SET",
+      title: "Retail loans disbursed by five banks",
+      content:
+        "The table shows the retail loans (in Rs. crore) disbursed by five hypothetical banks in one financial year, split across three loan categories.",
+      table: {
+        columns: ["Bank", "Home Loans", "Vehicle Loans", "Education Loans"],
+        rows: [
+          ["P", 480, 240, 80],
+          ["Q", 360, 180, 60],
+          ["R", 540, 300, 120],
+          ["S", 420, 210, 70],
+          ["T", 600, 280, 120],
+        ],
+      },
+    },
+  ],
+  questions: [
+    // Simplification
+    {
+      topic: "Simplification",
+      difficulty: "EASY",
+      text: "Find the value of ?: 48% of 650 + 32% of 450 = ?",
+      options: ["446", "464", "456", "474"],
+      correct: 2,
+      explanation: "48% of 650 = 312. 32% of 450 = 144. Sum = 312 + 144 = 456.",
+      tags: ["percentage", "bodmas"],
+    },
+    {
+      topic: "Simplification",
+      difficulty: "MEDIUM",
+      text: "Find the value of ?: (3/4 of 2,240) - (5/8 of 1,504) + 7^2 = ?",
+      options: ["789", "740", "691", "754"],
+      correct: 0,
+      explanation: "3/4 of 2240 = 1680. 5/8 of 1504 = 940. 7^2 = 49. Value = 1680 - 940 + 49 = 789.",
+      tags: ["fractions", "bodmas"],
+    },
+    {
+      topic: "Simplification",
+      difficulty: "MEDIUM",
+      text: "Find the value of ?: sqrt(1,764) x 15 - 18^2 / 6 = ?",
+      options: ["684", "51", "522", "576"],
+      correct: 3,
+      explanation:
+        "sqrt(1764) = 42, so 42 x 15 = 630. 18^2 = 324 and 324 / 6 = 54. Division comes before subtraction: 630 - 54 = 576.",
+      tags: ["bodmas", "square root"],
+    },
+    {
+      topic: "Simplification",
+      difficulty: "HARD",
+      text: "Find the value of ?: (7/12 of 1,440 + 15% of 2,400) / (0.25 x 96) = ? - 18",
+      options: ["32", "68", "50", "86"],
+      correct: 1,
+      explanation:
+        "7/12 of 1440 = 840. 15% of 2400 = 360. Numerator = 1200. Denominator = 0.25 x 96 = 24. 1200 / 24 = 50, so ? - 18 = 50 and ? = 68.",
+      tags: ["bodmas", "fractions"],
+    },
+
+    // Approximation
+    {
+      topic: "Approximation",
+      difficulty: "EASY",
+      text: "What value should approximately replace the question mark? 39.97% of 601.02 + 124.98 = ?",
+      options: ["365", "345", "395", "425"],
+      correct: 0,
+      explanation: "Round off: 40% of 600 = 240. 240 + 125 = 365.",
+      tags: ["rounding", "percentage"],
+    },
+    {
+      topic: "Approximation",
+      difficulty: "MEDIUM",
+      text: "What value should approximately replace the question mark? 1,799.87 / 29.96 + 14.02 x 12.97 = ?",
+      options: ["222", "242", "262", "282"],
+      correct: 1,
+      explanation: "Round off: 1800 / 30 = 60. 14 x 13 = 182. 60 + 182 = 242.",
+      tags: ["rounding", "bodmas"],
+    },
+    {
+      topic: "Approximation",
+      difficulty: "MEDIUM",
+      text: "What value should approximately replace the question mark? sqrt(2,025.3) x 7.98 - 19.97% of 449.9 = ?",
+      options: ["230", "250", "270", "300"],
+      correct: 2,
+      explanation: "Round off: sqrt(2025) = 45 and 45 x 8 = 360. 20% of 450 = 90. 360 - 90 = 270.",
+      tags: ["rounding", "square root"],
+    },
+    {
+      topic: "Approximation",
+      difficulty: "HARD",
+      text: "What value should approximately replace the question mark? (24.98)^2 + (8.02)^3 - 64.97% of 1,199.6 = ?",
+      options: ["300", "330", "390", "360"],
+      correct: 3,
+      explanation:
+        "Round off: 25^2 = 625. 8^3 = 512. 65% of 1200 = 780. 625 + 512 - 780 = 357, and the nearest option is 360.",
+      tags: ["rounding", "powers"],
+    },
+
+    // Number Series
+    {
+      topic: "Number Series",
+      difficulty: "EASY",
+      text: "What number should replace the question mark in the series? 7, 12, 19, 28, 39, ?",
+      options: ["50", "52", "54", "48"],
+      correct: 1,
+      explanation: "Differences are 5, 7, 9, 11, so the next difference is 13. 39 + 13 = 52.",
+      tags: ["missing term", "differences"],
+    },
+    {
+      topic: "Number Series",
+      difficulty: "MEDIUM",
+      text: "What number should replace the question mark in the series? 5, 11, 24, 51, 106, ?",
+      options: ["212", "223", "217", "218"],
+      correct: 2,
+      explanation:
+        "Pattern: x2 + 1, x2 + 2, x2 + 3, x2 + 4. So 5 x 2 + 1 = 11, 11 x 2 + 2 = 24, 24 x 2 + 3 = 51, 51 x 2 + 4 = 106. Next: 106 x 2 + 5 = 217.",
+      tags: ["missing term", "multiply and add"],
+    },
+    {
+      topic: "Number Series",
+      difficulty: "MEDIUM",
+      text: "Find the wrong term in the series: 3, 4, 10, 33, 138, 685, 4116",
+      options: ["33", "10", "685", "138"],
+      correct: 3,
+      explanation:
+        "Pattern: multiply by n and add n, for n = 1, 2, 3, ... The terms should be 3, 4, 10, 33, 136, 685, 4116, since 33 x 4 + 4 = 136 and 136 x 5 + 5 = 685. So 138 is wrong.",
+      tags: ["wrong term", "multiply and add"],
+    },
+    {
+      topic: "Number Series",
+      difficulty: "HARD",
+      text: "What number should replace the question mark in the series? 2, 3, 11, 38, 102, 227, ?",
+      options: ["443", "451", "419", "343"],
+      correct: 0,
+      explanation:
+        "Differences are 1, 8, 27, 64, 125, which are the cubes of 1, 2, 3, 4, 5. The next difference is 6^3 = 216. 227 + 216 = 443.",
+      tags: ["missing term", "cubes"],
+    },
+
+    // Quadratic Equations
+    {
+      topic: "Quadratic Equations",
+      difficulty: "EASY",
+      text: "Solve both equations and find the relationship between x and y. I. x^2 - 11x + 30 = 0; II. y^2 - 7y + 12 = 0",
+      options: ["x > y", "x < y", "x >= y", CANNOT],
+      correct: 0,
+      explanation:
+        "I. (x - 5)(x - 6) = 0, so x = 5 or 6. II. (y - 3)(y - 4) = 0, so y = 3 or 4. Every x is greater than every y, so x > y.",
+      tags: ["comparison", "factorisation"],
+    },
+    {
+      topic: "Quadratic Equations",
+      difficulty: "MEDIUM",
+      text: "Solve both equations and find the relationship between x and y. I. 2x^2 - 13x + 21 = 0; II. 3y^2 - 14y + 15 = 0",
+      options: ["x > y", "x <= y", "x >= y", CANNOT],
+      correct: 2,
+      explanation:
+        "I. (2x - 7)(x - 3) = 0, so x = 3.5 or 3. II. (3y - 5)(y - 3) = 0, so y = 5/3 or 3. The smallest x equals the largest y (both 3), and every other pair has x > y, so x >= y.",
+      tags: ["comparison", "equal roots"],
+    },
+    {
+      topic: "Quadratic Equations",
+      difficulty: "MEDIUM",
+      text: "Solve both equations and find the relationship between x and y. I. x^2 - 4x - 21 = 0; II. y^2 - 2y - 15 = 0",
+      options: ["x > y", "x < y", "x <= y", CANNOT],
+      correct: 3,
+      explanation:
+        "I. (x - 7)(x + 3) = 0, so x = 7 or -3. II. (y - 5)(y + 3) = 0, so y = 5 or -3. x = 7 is above both y values, while x = -3 is below y = 5, so no single relationship holds.",
+      tags: ["comparison", "negative roots"],
+    },
+    {
+      topic: "Quadratic Equations",
+      difficulty: "HARD",
+      text: "Solve both equations and find the relationship between x and y. I. 4x^2 - 20x + 25 = 0; II. 2y^2 - 11y + 15 = 0",
+      options: ["x > y", "x <= y", "x < y", CANNOT],
+      correct: 1,
+      explanation:
+        "I. (2x - 5)^2 = 0, so x = 2.5 only. II. (2y - 5)(y - 3) = 0, so y = 2.5 or 3. x equals y at 2.5 and is less than y at 3, so x <= y, not x < y.",
+      tags: ["comparison", "equal roots"],
+    },
+
+    // Percentage
+    {
+      topic: "Percentage",
+      difficulty: "EASY",
+      text: "If 35% of a number is 420, what is 60% of that number?",
+      options: ["252", "700", "680", "720"],
+      correct: 3,
+      explanation: "Number = 420 x 100 / 35 = 1200. 60% of 1200 = 720.",
+      tags: ["basic percentage"],
+    },
+    {
+      topic: "Percentage",
+      difficulty: "MEDIUM",
+      text: "The price of a commodity rises by 60%. By what percent must a household reduce its consumption so that its expenditure on the commodity stays the same?",
+      options: ["60%", "37.5%", "40%", "62.5%"],
+      correct: 1,
+      explanation: "Reduction = rise / (100 + rise) x 100 = 60 / 160 x 100 = 37.5%.",
+      tags: ["price and consumption"],
+    },
+    {
+      topic: "Percentage",
+      difficulty: "MEDIUM",
+      text: "In an election between two candidates, 12% of the votes polled were invalid. The winner got 55% of the valid votes and won by 2,640 votes. How many votes were polled in total?",
+      options: ["26,400", "32,000", "30,000", "28,800"],
+      correct: 2,
+      explanation:
+        "Margin = 55% - 45% = 10% of valid votes = 2640, so valid votes = 26400. Valid votes are 88% of the total, so total = 26400 / 0.88 = 30,000.",
+      tags: ["elections", "valid votes"],
+    },
+    {
+      topic: "Percentage",
+      difficulty: "HARD",
+      text: "A's income is 25% more than B's, and B's income is 20% less than C's. A, B and C spend 60%, 70% and 75% of their incomes respectively. If their total savings are Rs. 44,500, what is B's income?",
+      options: ["Rs. 40,000", "Rs. 50,000", "Rs. 44,500", "Rs. 36,000"],
+      correct: 0,
+      explanation:
+        "Let C = 100, so B = 80 and A = 100. Savings = 40 + 24 + 25 = 89 units = Rs. 44,500, so 1 unit = Rs. 500. B's income = 80 x 500 = Rs. 40,000.",
+      tags: ["income", "savings"],
+    },
+
+    // Profit and Loss
+    {
+      topic: "Profit and Loss",
+      difficulty: "EASY",
+      text: "A shopkeeper buys an article for Rs. 640 and sells it at a profit of 15%. What is the selling price?",
+      options: ["Rs. 544", "Rs. 725", "Rs. 736", "Rs. 753"],
+      correct: 2,
+      explanation: "Selling price = 640 x 115 / 100 = Rs. 736.",
+      tags: ["selling price"],
+    },
+    {
+      topic: "Profit and Loss",
+      difficulty: "MEDIUM",
+      text: "A trader marks an article 40% above its cost price and allows a discount of 15%. What is the profit percent?",
+      options: ["25%", "19%", "21%", "17%"],
+      correct: 1,
+      explanation: "Let cost = 100. Marked price = 140. Selling price = 140 x 0.85 = 119. Profit = 19%.",
+      tags: ["marked price", "discount"],
+    },
+    {
+      topic: "Profit and Loss",
+      difficulty: "MEDIUM",
+      text: "A trader sells two articles for Rs. 2,400 each, gaining 20% on one and losing 20% on the other. What is his overall loss?",
+      options: ["Rs. 96", "Rs. 240", "Rs. 150", "Rs. 200"],
+      correct: 3,
+      explanation:
+        "Cost of first = 2400 / 1.2 = Rs. 2,000. Cost of second = 2400 / 0.8 = Rs. 3,000. Total cost = Rs. 5,000 and total selling price = Rs. 4,800. Loss = Rs. 200.",
+      tags: ["same selling price", "overall loss"],
+    },
+    {
+      topic: "Profit and Loss",
+      difficulty: "HARD",
+      text: "A dealer marks goods 50% above cost price and gives a 20% discount. He also uses a false weight of 800 g instead of 1 kg. What is his overall profit percent?",
+      options: ["50%", "20%", "44%", "60%"],
+      correct: 0,
+      explanation:
+        "Let cost of 1 kg = 100. Selling price for a claimed 1 kg = 150 x 0.8 = 120. He actually gives 800 g, which costs 80. Profit = 40 on 80 = 50%.",
+      tags: ["false weight", "discount"],
+    },
+
+    // Simple Interest
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Simple Interest",
+      difficulty: "EASY",
+      text: "What is the simple interest on Rs. 7,500 at 8% per annum for 3 years?",
+      options: ["Rs. 1,800", "Rs. 1,500", "Rs. 2,100", "Rs. 1,200"],
+      correct: 0,
+      explanation: "SI = 7500 x 8 x 3 / 100 = Rs. 1,800.",
+      tags: ["basic formula"],
+    },
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Simple Interest",
+      difficulty: "MEDIUM",
+      text: "A sum amounts to Rs. 10,160 in 3 years and Rs. 11,600 in 5 years at simple interest. What is the rate of interest per annum?",
+      options: ["8%", "9%", "10%", "7.5%"],
+      correct: 1,
+      explanation:
+        "Interest for 2 years = 11600 - 10160 = 1440, so yearly interest = 720. Principal = 10160 - 3 x 720 = 8000. Rate = 720 / 8000 x 100 = 9%.",
+      tags: ["amount", "rate"],
+    },
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Simple Interest",
+      difficulty: "MEDIUM",
+      text: "At simple interest, a sum becomes 9/5 of itself in 10 years. What is the rate of interest per annum?",
+      options: ["9%", "7.5%", "8%", "18%"],
+      correct: 2,
+      explanation: "Interest = 9/5 - 1 = 4/5 of the principal in 10 years. Rate = (4/5) x 100 / 10 = 8%.",
+      tags: ["rate", "fraction of principal"],
+    },
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Simple Interest",
+      difficulty: "HARD",
+      text: "Rs. 24,000 is invested in two parts, one at 6% and the other at 10% per annum simple interest. The total interest after 4 years is Rs. 7,200. How much was invested at 10%?",
+      options: ["Rs. 15,000", "Rs. 12,000", "Rs. 10,000", "Rs. 9,000"],
+      correct: 3,
+      explanation:
+        "Yearly interest = 7200 / 4 = 1800. If all were at 6%, it would be 1440. Extra 360 comes from the 4% gap, so the part at 10% = 360 / 0.04 = Rs. 9,000.",
+      tags: ["two parts", "alligation"],
+    },
+
+    // Compound Interest
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Compound Interest",
+      difficulty: "EASY",
+      text: "What is the compound interest on Rs. 12,500 at 8% per annum for 2 years, compounded annually?",
+      options: ["Rs. 2,000", "Rs. 2,080", "Rs. 2,160", "Rs. 1,920"],
+      correct: 1,
+      explanation: "Amount = 12500 x 1.08 x 1.08 = Rs. 14,580. CI = 14580 - 12500 = Rs. 2,080.",
+      tags: ["annual compounding"],
+    },
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Compound Interest",
+      difficulty: "MEDIUM",
+      text: "The difference between compound interest and simple interest on a sum for 2 years at 6% per annum is Rs. 72. What is the sum?",
+      options: ["Rs. 12,000", "Rs. 24,000", "Rs. 20,000", "Rs. 18,000"],
+      correct: 2,
+      explanation: "For 2 years, difference = P x (r/100)^2. So 72 = P x 0.0036 and P = Rs. 20,000.",
+      tags: ["ci minus si"],
+    },
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Compound Interest",
+      difficulty: "MEDIUM",
+      text: "What is the compound interest on Rs. 16,000 for 1.5 years at 10% per annum, compounded half-yearly?",
+      options: ["Rs. 2,522", "Rs. 2,400", "Rs. 2,560", "Rs. 2,496"],
+      correct: 0,
+      explanation:
+        "Half-yearly rate = 5% for 3 periods. Amount = 16000 x 1.05 x 1.05 x 1.05 = Rs. 18,522. CI = 18522 - 16000 = Rs. 2,522.",
+      tags: ["half-yearly"],
+    },
+    {
+      topic: "Simple and Compound Interest",
+      subtopic: "Compound Interest",
+      difficulty: "HARD",
+      text: "A loan taken at 20% per annum compound interest is repaid in 2 equal annual instalments of Rs. 14,400 each. What was the amount of the loan?",
+      options: ["Rs. 28,800", "Rs. 24,000", "Rs. 20,000", "Rs. 22,000"],
+      correct: 3,
+      explanation:
+        "Present value of first instalment = 14400 / 1.2 = 12000. Present value of second = 14400 / 1.44 = 10000. Loan = 12000 + 10000 = Rs. 22,000.",
+      tags: ["instalments", "present value"],
+    },
+
+    // Ratio and Proportion
+    {
+      topic: "Ratio and Proportion",
+      difficulty: "EASY",
+      text: "Rs. 4,680 is divided among A, B and C in the ratio 2 : 3 : 4. What is C's share?",
+      options: ["Rs. 1,560", "Rs. 2,340", "Rs. 1,040", "Rs. 2,080"],
+      correct: 3,
+      explanation: "Total parts = 9, so 1 part = 4680 / 9 = 520. C's share = 4 x 520 = Rs. 2,080.",
+      tags: ["division in ratio"],
+    },
+    {
+      topic: "Ratio and Proportion",
+      difficulty: "MEDIUM",
+      text: "If A : B = 3 : 4 and B : C = 6 : 7, what is A : C?",
+      options: ["3 : 7", "9 : 14", "18 : 21", "9 : 7"],
+      correct: 1,
+      explanation: "A / C = (A / B) x (B / C) = (3/4) x (6/7) = 18/28 = 9/14. So A : C = 9 : 14.",
+      tags: ["compound ratio"],
+    },
+    {
+      topic: "Ratio and Proportion",
+      difficulty: "MEDIUM",
+      text: "Two numbers are in the ratio 5 : 8. If 12 is added to each, the ratio becomes 7 : 10. What is the larger number?",
+      options: ["48", "30", "42", "54"],
+      correct: 0,
+      explanation:
+        "(5k + 12) / (8k + 12) = 7/10, so 50k + 120 = 56k + 84 and k = 6. Numbers are 30 and 48. The larger is 48.",
+      tags: ["changing ratio"],
+    },
+    {
+      topic: "Ratio and Proportion",
+      difficulty: "HARD",
+      text: "The incomes of P and Q are in the ratio 5 : 4 and their expenditures are in the ratio 3 : 2. If each saves Rs. 6,000, what is P's income?",
+      options: ["Rs. 12,000", "Rs. 18,000", "Rs. 15,000", "Rs. 9,000"],
+      correct: 2,
+      explanation:
+        "5a - 3b = 6000 and 4a - 2b = 6000. The second gives b = 2a - 3000. Substituting: 5a - 6a + 9000 = 6000, so a = 3000. P's income = 5 x 3000 = Rs. 15,000.",
+      tags: ["income and expenditure", "savings"],
+    },
+
+    // Average
+    {
+      topic: "Average",
+      difficulty: "EASY",
+      text: "The average of five numbers is 42. Four of them are 38, 45, 50 and 36. What is the fifth number?",
+      options: ["41", "42", "39", "44"],
+      correct: 0,
+      explanation: "Total = 5 x 42 = 210. Sum of the four = 169. Fifth number = 210 - 169 = 41.",
+      tags: ["missing value"],
+    },
+    {
+      topic: "Average",
+      difficulty: "MEDIUM",
+      text: "The average mark of 40 students is 62. When 5 new students join, the average rises by 1. What is the average mark of the new students?",
+      options: ["67", "63", "69", "71"],
+      correct: 3,
+      explanation:
+        "Old total = 40 x 62 = 2480. New total = 45 x 63 = 2835. New students' total = 355, so their average = 355 / 5 = 71.",
+      tags: ["new members"],
+    },
+    {
+      topic: "Average",
+      difficulty: "MEDIUM",
+      text: "A batsman has a certain average after 15 innings. He scores 96 in the 16th innings, which raises his average by 3. What is his new average?",
+      options: ["48", "51", "54", "45"],
+      correct: 1,
+      explanation: "15a + 96 = 16(a + 3), so a = 96 - 48 = 48. New average = 48 + 3 = 51.",
+      tags: ["batsman", "innings"],
+    },
+    {
+      topic: "Average",
+      difficulty: "HARD",
+      text: "The average of 11 results is 60. The average of the first 6 results is 58 and the average of the last 6 results is 63. What is the 6th result?",
+      options: ["60", "62", "66", "69"],
+      correct: 2,
+      explanation:
+        "The 6th result is counted in both groups. Sum of both groups = 6 x 58 + 6 x 63 = 348 + 378 = 726. Total of all = 11 x 60 = 660. 6th result = 726 - 660 = 66.",
+      tags: ["overlapping groups"],
+    },
+
+    // Time and Work
+    {
+      topic: "Time and Work",
+      difficulty: "EASY",
+      text: "A can finish a job in 12 days and B in 18 days. How many days will they take working together?",
+      options: ["15 days", "7.2 days", "6 days", "8 days"],
+      correct: 1,
+      explanation: "Combined rate = 1/12 + 1/18 = 5/36 per day. Time = 36/5 = 7.2 days.",
+      tags: ["combined work"],
+    },
+    {
+      topic: "Time and Work",
+      difficulty: "MEDIUM",
+      text: "A and B can finish a job in 20 days and 30 days respectively. They work together for 6 days, then A leaves and B finishes the rest alone. How many days does the whole job take?",
+      options: ["21 days", "15 days", "18 days", "24 days"],
+      correct: 0,
+      explanation:
+        "In 6 days they finish 6 x (1/20 + 1/30) = 1/2. B takes 30 x 1/2 = 15 days for the rest. Total = 6 + 15 = 21 days.",
+      tags: ["leaving partway"],
+    },
+    {
+      topic: "Time and Work",
+      difficulty: "MEDIUM",
+      text: "15 men can complete a job in 24 days working 8 hours a day. How many days will 20 men take to complete it working 9 hours a day?",
+      options: ["18 days", "20 days", "14 days", "16 days"],
+      correct: 3,
+      explanation: "Total work = 15 x 24 x 8 = 2880 man-hours. Days = 2880 / (20 x 9) = 16 days.",
+      tags: ["man-hours"],
+    },
+    {
+      topic: "Time and Work",
+      difficulty: "HARD",
+      text: "A is 50% more efficient than B. A, B and C together finish a job in 6 days, and C alone takes 24 days. How many days would B alone take?",
+      options: ["12 days", "16 days", "20 days", "32 days"],
+      correct: 2,
+      explanation:
+        "A + B = 1/6 - 1/24 = 1/8 per day. A = 1.5B, so 2.5B = 1/8 and B = 1/20. B alone takes 20 days.",
+      tags: ["efficiency"],
+    },
+
+    // Pipes and Cisterns
+    {
+      topic: "Time and Work",
+      subtopic: "Pipes and Cisterns",
+      difficulty: "EASY",
+      text: "Pipes A and B can fill a tank in 15 hours and 10 hours respectively. How long will they take to fill it together?",
+      options: ["12.5 hours", "5 hours", "6 hours", "8 hours"],
+      correct: 2,
+      explanation: "Combined rate = 1/15 + 1/10 = 1/6 per hour. Time = 6 hours.",
+      tags: ["filling"],
+    },
+    {
+      topic: "Time and Work",
+      subtopic: "Pipes and Cisterns",
+      difficulty: "MEDIUM",
+      text: "Pipes A and B fill a tank in 12 minutes and 20 minutes, while pipe C empties it in 30 minutes. If all three are opened together on an empty tank, how long will it take to fill?",
+      options: ["10 minutes", "7.5 minutes", "15 minutes", "6 minutes"],
+      correct: 0,
+      explanation: "Net rate = 1/12 + 1/20 - 1/30 = (5 + 3 - 2) / 60 = 1/10 per minute. Time = 10 minutes.",
+      tags: ["emptying pipe"],
+    },
+    {
+      topic: "Time and Work",
+      subtopic: "Pipes and Cisterns",
+      difficulty: "MEDIUM",
+      text: "A pipe alone fills a tank in 18 hours, but because of a leak it takes 24 hours. How long would the leak alone take to empty the full tank?",
+      options: ["42 hours", "6 hours", "36 hours", "72 hours"],
+      correct: 3,
+      explanation: "Leak rate = 1/18 - 1/24 = (4 - 3) / 72 = 1/72 per hour. Time = 72 hours.",
+      tags: ["leak"],
+    },
+    {
+      topic: "Time and Work",
+      subtopic: "Pipes and Cisterns",
+      difficulty: "HARD",
+      text: "Pipes A and B fill a tank in 24 minutes and 32 minutes respectively. Both are opened together, and B is closed after some time so that the tank is full exactly 18 minutes after the start. After how many minutes was B closed?",
+      options: ["10 minutes", "8 minutes", "14 minutes", "6 minutes"],
+      correct: 1,
+      explanation:
+        "A runs all 18 minutes and fills 18/24 = 3/4. B fills the remaining 1/4, which takes 32 x 1/4 = 8 minutes.",
+      tags: ["pipe closed midway"],
+    },
+
+    // Speed, Time and Distance
+    {
+      topic: "Speed, Time and Distance",
+      difficulty: "EASY",
+      text: "A train running at 72 km/h crosses a pole in 15 seconds. What is the length of the train?",
+      options: ["270 m", "360 m", "1,080 m", "300 m"],
+      correct: 3,
+      explanation: "72 km/h = 72 x 5/18 = 20 m/s. Length = 20 x 15 = 300 m.",
+      tags: ["trains", "unit conversion"],
+    },
+    {
+      topic: "Speed, Time and Distance",
+      difficulty: "MEDIUM",
+      text: "Two trains of lengths 180 m and 220 m run in opposite directions at 54 km/h and 36 km/h. How long will they take to cross each other?",
+      options: ["16 seconds", "80 seconds", "40 seconds", "20 seconds"],
+      correct: 0,
+      explanation:
+        "Relative speed = 54 + 36 = 90 km/h = 25 m/s. Total length = 400 m. Time = 400 / 25 = 16 seconds.",
+      tags: ["trains", "relative speed"],
+    },
+    {
+      topic: "Speed, Time and Distance",
+      difficulty: "MEDIUM",
+      text: "A boat has a speed of 15 km/h in still water and the stream flows at 3 km/h. How long will the boat take to go 72 km downstream and return to the start?",
+      options: ["9.6 hours", "12 hours", "10 hours", "8 hours"],
+      correct: 2,
+      explanation: "Downstream speed = 18 km/h, time = 4 hours. Upstream speed = 12 km/h, time = 6 hours. Total = 10 hours.",
+      tags: ["boats and streams"],
+    },
+    {
+      topic: "Speed, Time and Distance",
+      difficulty: "HARD",
+      text: "Stations P and Q are 465 km apart. A train leaves P at 7 a.m. at 60 km/h towards Q. Another train leaves Q at 8 a.m. at 75 km/h towards P. How far from P do they meet?",
+      options: ["225 km", "240 km", "180 km", "285 km"],
+      correct: 1,
+      explanation:
+        "By 8 a.m. the first train has covered 60 km, leaving 405 km. Closing speed = 135 km/h, so they meet 3 hours later. Distance from P = 60 x 4 = 240 km.",
+      tags: ["trains", "meeting point"],
+    },
+
+    // Partnership
+    {
+      topic: "Partnership",
+      difficulty: "EASY",
+      text: "A and B invest Rs. 15,000 and Rs. 25,000 in a business for the same period. If the profit is Rs. 12,000, what is B's share?",
+      options: ["Rs. 4,500", "Rs. 7,500", "Rs. 6,000", "Rs. 8,000"],
+      correct: 1,
+      explanation: "Ratio = 15000 : 25000 = 3 : 5. B's share = 12000 x 5/8 = Rs. 7,500.",
+      tags: ["profit sharing"],
+    },
+    {
+      topic: "Partnership",
+      difficulty: "MEDIUM",
+      text: "A starts a business with Rs. 36,000. After 4 months B joins with Rs. 48,000. At the end of the year the profit is Rs. 34,000. What is B's share?",
+      options: ["Rs. 18,000", "Rs. 17,000", "Rs. 20,000", "Rs. 16,000"],
+      correct: 3,
+      explanation:
+        "A = 36000 x 12 = 432000. B = 48000 x 8 = 384000. Ratio = 9 : 8. B's share = 34000 x 8/17 = Rs. 16,000.",
+      tags: ["time-weighted capital"],
+    },
+    {
+      topic: "Partnership",
+      difficulty: "MEDIUM",
+      text: "A, B and C invest Rs. 20,000, Rs. 30,000 and Rs. 50,000 for the same period. A, as the working partner, first receives 10% of the profit, and the rest is divided in the ratio of investments. If the profit is Rs. 60,000, how much does A receive in all?",
+      options: ["Rs. 12,000", "Rs. 10,800", "Rs. 16,800", "Rs. 18,000"],
+      correct: 2,
+      explanation:
+        "Working share = 10% of 60000 = 6000. Remainder = 54000. A's part = 20000 / 100000 = 1/5, so 54000 / 5 = 10800. Total = 6000 + 10800 = Rs. 16,800.",
+      tags: ["working partner"],
+    },
+    {
+      topic: "Partnership",
+      difficulty: "HARD",
+      text: "A and B start a business with Rs. 40,000 and Rs. 60,000. After 6 months A withdraws Rs. 10,000 and B adds Rs. 20,000. If the profit at the end of the year is Rs. 57,000, what is A's share?",
+      options: ["Rs. 19,000", "Rs. 22,800", "Rs. 38,000", "Rs. 17,100"],
+      correct: 0,
+      explanation:
+        "A = 40000 x 6 + 30000 x 6 = 420000. B = 60000 x 6 + 80000 x 6 = 840000. Ratio = 1 : 2. A's share = 57000 / 3 = Rs. 19,000.",
+      tags: ["change in capital"],
+    },
+
+    // Mixture and Alligation
+    {
+      topic: "Mixture and Alligation",
+      difficulty: "EASY",
+      text: "Rice at Rs. 40 per kg and Rs. 55 per kg is mixed in the ratio 2 : 3. What is the price per kg of the mixture?",
+      options: ["Rs. 47.5", "Rs. 46", "Rs. 50", "Rs. 49"],
+      correct: 3,
+      explanation: "Price = (2 x 40 + 3 x 55) / 5 = 245 / 5 = Rs. 49.",
+      tags: ["weighted average"],
+    },
+    {
+      topic: "Mixture and Alligation",
+      difficulty: "MEDIUM",
+      text: "In what ratio must tea at Rs. 62 per kg be mixed with tea at Rs. 38 per kg to get a mixture worth Rs. 46 per kg?",
+      options: ["1 : 2", "2 : 1", "4 : 3", "3 : 1"],
+      correct: 0,
+      explanation: "By alligation, ratio = (46 - 38) : (62 - 46) = 8 : 16 = 1 : 2.",
+      tags: ["alligation rule"],
+    },
+    {
+      topic: "Mixture and Alligation",
+      difficulty: "MEDIUM",
+      text: "A 60-litre mixture contains milk and water in the ratio 7 : 3. How much water must be added to make the ratio 3 : 2?",
+      options: ["12 litres", "8 litres", "10 litres", "14 litres"],
+      correct: 2,
+      explanation: "Milk = 42 litres, water = 18 litres. Water needed = 42 x 2/3 = 28 litres. Water to add = 28 - 18 = 10 litres.",
+      tags: ["adding water"],
+    },
+    {
+      topic: "Mixture and Alligation",
+      difficulty: "HARD",
+      text: "A vessel holds 80 litres of pure milk. 16 litres are drawn off and replaced with water, and this process is carried out three times in all. How much milk remains in the vessel?",
+      options: ["32 litres", "40.96 litres", "51.2 litres", "48 litres"],
+      correct: 1,
+      explanation: "Milk left = 80 x (1 - 16/80)^3 = 80 x 0.8 x 0.8 x 0.8 = 40.96 litres.",
+      tags: ["repeated replacement"],
+    },
+
+    // Probability
+    {
+      topic: "Probability",
+      difficulty: "EASY",
+      text: "A bag contains 5 red, 7 blue and 4 green balls. One ball is drawn at random. What is the probability that it is blue?",
+      options: ["7/16", "5/16", "1/4", "7/9"],
+      correct: 0,
+      explanation: "Total balls = 5 + 7 + 4 = 16. Probability = 7/16.",
+      tags: ["single draw"],
+    },
+    {
+      topic: "Probability",
+      difficulty: "MEDIUM",
+      text: "Two fair dice are thrown together. What is the probability that the sum of the numbers shown is 9?",
+      options: ["1/12", "5/36", "1/9", "1/6"],
+      correct: 2,
+      explanation: "Favourable outcomes: (3,6), (4,5), (5,4), (6,3), which is 4 of 36. Probability = 4/36 = 1/9.",
+      tags: ["dice"],
+    },
+    {
+      topic: "Probability",
+      difficulty: "MEDIUM",
+      text: "A bag contains 6 white and 4 black balls. Two balls are drawn at random without replacement. What is the probability that they are of different colours?",
+      options: ["12/25", "8/15", "1/3", "7/15"],
+      correct: 1,
+      explanation: "Favourable = 6 x 4 = 24. Total = 10C2 = 45. Probability = 24/45 = 8/15.",
+      tags: ["without replacement"],
+    },
+    {
+      topic: "Probability",
+      difficulty: "HARD",
+      text: "The probabilities that A, B and C solve a problem independently are 1/3, 2/5 and 3/8 respectively. What is the probability that at least one of them solves it?",
+      options: ["1/20", "1/4", "13/20", "3/4"],
+      correct: 3,
+      explanation: "P(none solves) = (2/3) x (3/5) x (5/8) = 1/4. P(at least one) = 1 - 1/4 = 3/4.",
+      tags: ["independent events", "at least one"],
+    },
+
+    // Permutation and Combination
+    {
+      topic: "Permutation and Combination",
+      difficulty: "EASY",
+      text: "How many 3-digit numbers with no repeated digit can be formed using the digits 1 to 7?",
+      options: ["343", "35", "180", "210"],
+      correct: 3,
+      explanation: "Choices for the three places are 7, 6 and 5. Count = 7 x 6 x 5 = 210.",
+      tags: ["arrangements", "digits"],
+      exams: PNC_EXAMS,
+    },
+    {
+      topic: "Permutation and Combination",
+      difficulty: "MEDIUM",
+      text: "In how many different ways can the letters of the word BANKING be arranged?",
+      options: ["5,040", "2,520", "1,260", "720"],
+      correct: 1,
+      explanation: "There are 7 letters with N repeated twice. Arrangements = 7! / 2! = 5040 / 2 = 2,520.",
+      tags: ["words", "repeated letters"],
+      exams: PNC_EXAMS,
+    },
+    {
+      topic: "Permutation and Combination",
+      difficulty: "MEDIUM",
+      text: "A committee of 5 is to be formed from 6 men and 4 women so that it has exactly 2 women. In how many ways can this be done?",
+      options: ["252", "60", "120", "90"],
+      correct: 2,
+      explanation: "Choose 2 women from 4 and 3 men from 6. Ways = 4C2 x 6C3 = 6 x 20 = 120.",
+      tags: ["committee", "selection"],
+      exams: PNC_EXAMS,
+    },
+    {
+      topic: "Permutation and Combination",
+      difficulty: "HARD",
+      text: "In how many ways can the letters of the word MORTGAGE be arranged so that all the vowels stay together?",
+      options: ["2,160", "4,320", "720", "20,160"],
+      correct: 0,
+      explanation:
+        "Vowels O, A, E form one block, leaving M, R, T, G, G and the block: 6 units with G repeated. Units can be arranged in 6! / 2! = 360 ways, and the vowels in 3! = 6 ways. Total = 360 x 6 = 2,160.",
+      tags: ["words", "vowels together"],
+      exams: PNC_EXAMS,
+    },
+
+    // Data Interpretation
+    {
+      topic: "Data Interpretation",
+      subtopic: "Table DI",
+      difficulty: "EASY",
+      format: "DATA_INTERPRETATION",
+      context: "quant-di-bank-loans",
+      text: "What is the average home loan disbursement per bank, in Rs. crore?",
+      options: ["460", "500", "480", "520"],
+      correct: 2,
+      explanation: "Total = 480 + 360 + 540 + 420 + 600 = 2400. Average = 2400 / 5 = 480.",
+      tags: ["average", "table"],
+    },
+    {
+      topic: "Data Interpretation",
+      subtopic: "Table DI",
+      difficulty: "MEDIUM",
+      format: "DATA_INTERPRETATION",
+      context: "quant-di-bank-loans",
+      text: "Vehicle loans of Bank R are what percent of its total loans across the three categories?",
+      options: ["31.25%", "30%", "35%", "33.33%"],
+      correct: 0,
+      explanation: "Bank R's total = 540 + 300 + 120 = 960. Percentage = 300 / 960 x 100 = 31.25%.",
+      tags: ["percentage", "table"],
+    },
+    {
+      topic: "Data Interpretation",
+      subtopic: "Table DI",
+      difficulty: "MEDIUM",
+      format: "DATA_INTERPRETATION",
+      context: "quant-di-bank-loans",
+      text: "What is the ratio of the combined vehicle loans of Banks P and Q to the combined education loans of Banks R and T?",
+      options: ["4 : 7", "5 : 3", "7 : 5", "7 : 4"],
+      correct: 3,
+      explanation: "Vehicle loans of P and Q = 240 + 180 = 420. Education loans of R and T = 120 + 120 = 240. Ratio = 420 : 240 = 7 : 4.",
+      tags: ["ratio", "table"],
+    },
+    {
+      topic: "Data Interpretation",
+      subtopic: "Table DI",
+      difficulty: "HARD",
+      format: "DATA_INTERPRETATION",
+      context: "quant-di-bank-loans",
+      text: "Next year Bank Q's home loans rise by 25% and its vehicle loans fall by 10%, while its education loans stay unchanged. By what percent does its total loan disbursement rise?",
+      options: ["15%", "12%", "7.5%", "13.5%"],
+      correct: 1,
+      explanation:
+        "Current total = 360 + 180 + 60 = 600. New home loans = 450, new vehicle loans = 162, education = 60. New total = 672. Rise = 72 / 600 x 100 = 12%.",
+      tags: ["percentage change", "table"],
+    },
+
+    // Mensuration
+    {
+      topic: "Mensuration and Statistics",
+      subtopic: "Rectangle",
+      difficulty: "EASY",
+      text: "What is the area of a rectangular plot of length 24 m and breadth 15 m?",
+      options: ["78 sq m", "360 sq m", "180 sq m", "720 sq m"],
+      correct: 1,
+      explanation: "Area = 24 x 15 = 360 sq m.",
+      tags: ["rectangle", "area"],
+    },
+    {
+      topic: "Mensuration and Statistics",
+      subtopic: "Circle",
+      difficulty: "MEDIUM",
+      text: "The circumference of a circle is 88 cm. What is its area? (Take pi = 22/7)",
+      options: ["154 sq cm", "308 sq cm", "1,232 sq cm", "616 sq cm"],
+      correct: 3,
+      explanation: "2 x (22/7) x r = 88, so r = 14 cm. Area = (22/7) x 14 x 14 = 616 sq cm.",
+      tags: ["circle", "area"],
+    },
+    {
+      topic: "Mensuration and Statistics",
+      subtopic: "Cylinder",
+      difficulty: "MEDIUM",
+      text: "A cylinder of height 20 cm has a curved surface area of 880 sq cm. What is its volume? (Take pi = 22/7)",
+      options: ["3,080 cu cm", "6,160 cu cm", "1,540 cu cm", "2,464 cu cm"],
+      correct: 0,
+      explanation: "2 x (22/7) x r x 20 = 880, so r = 7 cm. Volume = (22/7) x 7 x 7 x 20 = 3,080 cu cm.",
+      tags: ["cylinder", "volume"],
+    },
+    {
+      topic: "Mensuration and Statistics",
+      subtopic: "Sphere",
+      difficulty: "HARD",
+      text: "A solid metal sphere of radius 6 cm is melted and recast into a solid cylinder of radius 3 cm. What is the height of the cylinder?",
+      options: ["24 cm", "48 cm", "32 cm", "16 cm"],
+      correct: 2,
+      explanation:
+        "Volumes are equal: (4/3) x pi x 6^3 = pi x 3^2 x h. So 288 = 9h and h = 32 cm.",
+      tags: ["sphere", "cylinder", "recasting"],
+    },
+  ],
+};
+
+export default file;
